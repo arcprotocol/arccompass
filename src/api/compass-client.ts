@@ -1,13 +1,20 @@
 /**
  * ARC Compass Client
  * 
- * Client interface for interacting with the ARC Compass routing system.
+ * Client interface for interacting with the ARC Compass agent search engine.
  */
 
-import { RouteOptions, RouteResult } from '../models/types';
+import { 
+  SearchOptions, 
+  SearchResult, 
+  RouteOptions, 
+  RouteResult, 
+  AgentSearchCriteria,
+  Agent
+} from '../models/types';
 
 /**
- * Client for interacting with the ARC Compass routing system
+ * Client for interacting with the ARC Compass agent search engine
  */
 export class ARCCompassClient {
   private endpoint: string;
@@ -24,6 +31,26 @@ export class ARCCompassClient {
   }) {
     this.endpoint = options.endpoint;
     this.apiKey = options.apiKey;
+  }
+
+  /**
+   * Search for the most relevant agents based on a query
+   * 
+   * @param options Search options
+   * @returns Search results with ranked agents
+   */
+  async search(options: SearchOptions): Promise<SearchResult> {
+    // Implementation will be added in future versions
+    return {
+      agents: [],
+      totalFound: 0,
+      queryAnalysis: {
+        intent: "unknown",
+        requiredCapabilities: [],
+        optionalCapabilities: [],
+        complexity: 0.5
+      }
+    };
   }
 
   /**
@@ -47,8 +74,18 @@ export class ARCCompassClient {
    * @param criteria Search criteria for finding agents
    * @returns List of matching agents
    */
-  async findAgents(criteria: any): Promise<any[]> {
+  async findAgents(criteria: AgentSearchCriteria): Promise<Agent[]> {
     // Implementation will be added in future versions
     return [];
+  }
+
+  /**
+   * Submit feedback about search or routing results
+   * 
+   * @param event Feedback event type
+   * @param data Feedback data
+   */
+  async submitFeedback(event: string, data: Record<string, any>): Promise<void> {
+    // Implementation will be added in future versions
   }
 }

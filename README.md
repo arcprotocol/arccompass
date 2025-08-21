@@ -14,21 +14,22 @@ In the rapidly evolving landscape of AI agents, we're facing a challenge similar
 ARC Compass sits as an intelligent layer between agent requests and the agent discovery system:
 
 ```
-User → Agent A → ARC Compass → ARC Ledger → Multiple Specialized Agents → Combined Results → User
+User → Agent A → ARC Compass → ARC Ledger → Results → Agent A → Direct Communication with Matched Agents → User
 ```
 
 1. **Query Analysis**: When an agent receives a query it can't fully handle, it forwards the query to ARC Compass
 2. **Agent Discovery**: ARC Compass consults the ARC Ledger to identify all available agents
 3. **Intelligent Matching**: Using advanced LLM capabilities, ARC Compass evaluates which agents are best suited to handle specific aspects of the query
-4. **Orchestration**: ARC Compass routes sub-queries to the appropriate agents via ARC Protocol
-5. **Result Synthesis**: Results from multiple agents are combined, enhanced, and returned to the originating agent
+4. **Results Return**: ARC Compass returns the ranked list of best-matching agents to the original Agent A
+5. **Direct Communication**: Agent A then uses the ARC Protocol to communicate directly with the matched agents
+6. **Response to User**: Agent A delivers the final results to the user
 
 ## Key Features
 
 - **Intelligent Agent Selection**: Matches queries to the most appropriate agents based on capabilities, performance history, and availability
-- **Multi-Agent Orchestration**: Coordinates complex workflows across multiple specialized agents
-- **Query Decomposition**: Breaks down complex queries into sub-tasks for specialized handling
-- **Result Synthesis**: Combines and enhances results from multiple agents into cohesive responses
+- **Real-time Search**: Provides fast, real-time agent search results
+- **Agent Ranking**: Ranks agents by relevance to the specific query
+- **Agent-to-Agent Facilitation**: Enables direct communication between agents after discovery
 - **Continuous Learning**: Improves routing decisions based on feedback and performance metrics
 - **Scalable Architecture**: Designed to handle millions of agents and queries
 - **Agent-Agnostic**: Works with any agent that implements the ARC Protocol
@@ -39,8 +40,7 @@ User → Agent A → ARC Compass → ARC Ledger → Multiple Specialized Agents 
 
 - **Query Analyzer**: Processes incoming queries to understand intent and requirements
 - **Agent Matcher**: Identifies the optimal agents for a given query based on multiple factors
-- **Workflow Orchestrator**: Manages the flow of information between multiple agents
-- **Result Synthesizer**: Combines and enhances results from multiple agents
+- **Relevance Ranker**: Ranks agents by their relevance to the specific query
 - **Feedback Loop**: Collects performance metrics to improve future routing decisions
 
 ### Integration Points
@@ -61,12 +61,14 @@ Create powerful meta-agents that leverage specialized capabilities across the ag
 // Example: A meta-agent that handles complex research tasks
 const researchAssistant = new ARCAgent({
   name: "research-assistant",
-  compass: arcCompassClient,
-  enhanceWith: ["academic-search", "data-visualization", "fact-checking"]
+  compass: arcCompassClient
 });
 
-// The agent automatically routes appropriate subtasks to specialized agents
-const report = await researchAssistant.process("Create a comprehensive report on climate change impacts in coastal cities");
+// Find specialized agents for research tasks
+const matchedAgents = await researchAssistant.findAgents("Create a comprehensive report on climate change impacts in coastal cities");
+
+// Directly communicate with the matched agents using ARC Protocol
+const report = await researchAssistant.communicateWithAgents(matchedAgents, "Create a comprehensive report on climate change impacts in coastal cities");
 ```
 
 ### Dynamic Agent Networks
@@ -75,14 +77,31 @@ Build flexible networks of agents that collaborate on complex tasks:
 
 ```typescript
 // Example: A system that assembles the right team of agents for each task
-const projectManager = new ARCCompassRouter({
-  query: "Design a sustainable urban transportation system",
-  requiredCapabilities: ["urban-planning", "sustainability-analysis", "transportation-modeling"],
-  optionalCapabilities: ["economic-impact", "visualization"]
+const projectManager = new ARCCompassClient({
+  endpoint: 'https://compass.arcprotocol.ai',
+  apiKey: 'your-api-key'
 });
 
-// ARC Compass finds and orchestrates the right agents for each aspect
-const results = await projectManager.executeWorkflow();
+// Search for agents with specific capabilities
+const matchedAgents = await projectManager.search({
+  query: "Design a sustainable urban transportation system",
+  maxResults: 5
+});
+
+// Connect with the matched agents directly
+const arcClient = new ARCClient({
+  endpoint: matchedAgents[0].url,
+  requestAgent: "project-manager",
+  targetAgent: matchedAgents[0].agentId
+});
+
+// Start communication with the matched agent
+const result = await arcClient.task.create({
+  initialMessage: {
+    role: "user",
+    parts: [{ type: "TextPart", content: "Design a sustainable urban transportation system" }]
+  }
+});
 ```
 
 ### Agent Marketplace
@@ -91,13 +110,20 @@ Enable discovery and utilization of specialized agents:
 
 ```typescript
 // Example: Finding the best agent for a specific task
-const availableAgents = await arcCompass.findAgents({
-  task: "Generate photorealistic images of architectural concepts",
-  maxCost: 0.05,  // per request
-  minReliability: 0.95
+const availableAgents = await arcCompass.search({
+  query: "Generate photorealistic images of architectural concepts",
+  maxResults: 5
 });
 
-// Returns ranked list of agents matching the criteria
+// Display ranked list of agents to the user
+console.log("Top agents for your task:");
+availableAgents.agents.forEach((agent, index) => {
+  console.log(`${index + 1}. ${agent.name} (Score: ${agent.relevanceScore.toFixed(2)})`);
+  console.log(`   ${agent.description}`);
+});
+
+// User selects an agent, then communicate directly with it
+const selectedAgent = availableAgents.agents[0];
 ```
 
 ## Getting Started
@@ -112,6 +138,7 @@ npm install arc-compass
 
 ```typescript
 import { ARCCompassClient } from 'arc-compass';
+import { ARCClient } from 'arc-protocol';
 
 // Initialize ARC Compass client
 const compass = new ARCCompassClient({
@@ -119,26 +146,32 @@ const compass = new ARCCompassClient({
   apiKey: 'your-api-key'
 });
 
-// Route a query to the best available agents
-const result = await compass.route({
+// Search for the best agents for a specific query
+const searchResult = await compass.search({
   query: "Create a business plan for a sustainable fashion startup",
-  preferredAgents: ["business-planner", "sustainability-expert"],
-  maxAgents: 3,
-  synthesizeResults: true
+  maxResults: 3
 });
 
-console.log(`Agents consulted: ${result.agentsUsed.join(', ')}`);
-console.log(`Combined response: ${result.synthesizedResponse}`);
+console.log(`Found ${searchResult.agents.length} relevant agents`);
+
+// Connect directly with the top matched agent using ARC Protocol
+const topAgent = searchResult.agents[0];
+const arcClient = new ARCClient({
+  endpoint: topAgent.url,
+  requestAgent: "my-agent-id",
+  targetAgent: topAgent.agentId
+});
+
+// Start communication with the matched agent
+const taskResult = await arcClient.task.create({
+  initialMessage: {
+    role: "user",
+    parts: [{ type: "TextPart", content: "Create a business plan for a sustainable fashion startup" }]
+  }
+});
+
+console.log(`Task created with ID: ${taskResult.task.taskId}`);
 ```
-
-## Roadmap
-
-- **Q3 2023**: Initial specification and prototype
-- **Q4 2023**: Alpha release with basic routing capabilities
-- **Q1 2024**: Beta release with advanced orchestration features
-- **Q2 2024**: Production release with full feature set
-- **Q3 2024**: Ecosystem expansion and third-party integrations
-- **Q4 2024**: Advanced learning capabilities and optimization tools
 
 ## Contributing
 
